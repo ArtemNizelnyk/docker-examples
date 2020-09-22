@@ -43,4 +43,5 @@ WORKDIR C:\artifacts
 COPY --from=builder C:\out\website .\website\
 COPY --from=builder C:\out\transforms .\transforms\
 COPY --from=builder C:\out\xconnect .\xconnect\
-COPY --from=builder C:\out\jss .\jss\
+# Copy jss artifacts
+#COPY --from=builder C:\out\jss .\jss\

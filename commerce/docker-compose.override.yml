@@ -21,24 +21,35 @@ services:
   mssql:
     image: ${REGISTRY}${COMPOSE_PROJECT_NAME}sitecore-xc1-mssql:${VERSION:-latest}
     build:
-      context: ./docker/build/xc-common/mssql
+      context: ./docker/build/xc1-cxa-jss/mssql
       dockerfile: ./standalone/Dockerfile
       args:
         BASE_IMAGE: ${XC_NONPRODUCTION_SITECORE_DOCKER_REGISTRY}sitecore-xc1-mssql:${XC_PACKAGES_TAG}
-        SPE_IMAGE: ${SITECORE_MODULE_REGISTRY}spe-assets:${SPE_VERSION}
-        SXA_IMAGE: ${SITECORE_MODULE_REGISTRY}sxa-xp1-assets:${SXA_VERSION}
-        HEADLESS_SERVICES_IMAGE: ${SITECORE_MODULE_REGISTRY}jss-xp1-assets:${JSS_VERSION}
+        SPE_RESOURCES_IMAGE: ${MODULES_SITECORE_DOCKER_REGISTRY}spe-assets:${SPE_SITECORE_TAG}
+        SXA_RESOURCES_IMAGE: ${MODULES_SITECORE_DOCKER_REGISTRY}sxa-xp1-assets:${SXA_SITECORE_TAG}
+        HEADLESS_SERVICES_IMAGE: ${MODULES_SITECORE_DOCKER_REGISTRY}jss-xp1-assets:${JSS_SITECORE_TAG}
+        TOPOLOGY: xc1
     mem_limit: 2GB
     volumes:
       - ${LOCAL_DATA_PATH}\mssql:c:\data
+  mssql-init:
+    image: ${REGISTRY}${COMPOSE_PROJECT_NAME}sitecore-xc1-mssql-init:${VERSION:-latest}
+    build:
+      context: ./docker/build/xc1-cxa-jss/mssql
+      dockerfile: ./init/Dockerfile
+      args:
+        BASE_IMAGE: ${XC_SITECORE_DOCKER_REGISTRY}xc1-mssql-init:${XC_PACKAGES_TAG}
+        SPE_RESOURCES_IMAGE: ${MODULES_SITECORE_DOCKER_REGISTRY}spe-assets:${SPE_SITECORE_TAG}
+        SXA_RESOURCES_IMAGE: ${MODULES_SITECORE_DOCKER_REGISTRY}sxa-xp1-assets:${SXA_SITECORE_TAG}
+        TOPOLOGY: xc1
   solr:
     image: ${REGISTRY}${COMPOSE_PROJECT_NAME}-xc1-solr:${VERSION:-latest}
     build:
-      context: ./docker/build/xc-common/solr
+      context: ./docker/build/xc1-cxa-jss/solr
       dockerfile: ./standalone/Dockerfile
       args:
         BASE_IMAGE: ${XC_NONPRODUCTION_SITECORE_DOCKER_REGISTRY}sitecore-xc1-solr:${XC_PACKAGES_TAG}
-        SXA_IMAGE: ${SITECORE_MODULE_REGISTRY}sxa-xp1-assets:${SXA_VERSION}
+        SXA_RESOURCES_IMAGE: ${SITECORE_MODULE_REGISTRY}sxa-xp1-assets:${SXA_VERSION}
     mem_limit: 1GB
     volumes:
       - ${LOCAL_DATA_PATH}\solr:c:\data
