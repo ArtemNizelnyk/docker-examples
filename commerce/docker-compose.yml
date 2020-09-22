@@ -18,7 +18,7 @@ services:
       - source: \\.\pipe\docker_engine
         target: \\.\pipe\docker_engine
         type: npipe
-      - ./traefik:C:/etc/traefik
+      - ./docker/traefik:C:/etc/traefik
     restart: unless-stopped
     depends_on:
       cd:
@@ -108,10 +108,6 @@ services:
         condition: service_started
       xdbcollection:
         condition: service_started
-      xdbautomation:
-        condition: service_started
-      xdbautomationrpt:
-        condition: service_started
       xdbrefdata:
         condition: service_started
     environment:
@@ -146,8 +142,6 @@ services:
       - "traefik.http.routers.cd-secure.rule=Host(`${CD_HOST}`)"
       - "traefik.http.routers.cd-secure.tls=true"
       - "traefik.http.routers.cd-secure.middlewares=force-STS-Header"
-    volumes:
-      - C:\containers\cd\domains-shared:C:\inetpub\wwwroot\App_Config\Security-Shared:RW
   cm:
     isolation: ${ISOLATION}
     image: ${XC_SITECORE_DOCKER_REGISTRY}sitecore-xc1-cm:${XC_PACKAGES_TAG}
@@ -163,10 +157,6 @@ services:
       xdbcollection:
         condition: service_started
       xdbsearch:
-        condition: service_started
-      xdbautomation:
-        condition: service_started
-      xdbautomationrpt:
         condition: service_started
       xdbrefdata:
         condition: service_started
@@ -220,8 +210,6 @@ services:
       - "traefik.http.routers.cm-secure.rule=Host(`${CM_HOST}`)"
       - "traefik.http.routers.cm-secure.tls=true"
       - "traefik.http.routers.cm-secure.middlewares=force-STS-Header"
-    volumes:
-      - C:\containers\cm\domains-shared:C:\inetpub\wwwroot\App_Config\Security-Shared:RW
   prc:
     isolation: ${ISOLATION}
     image: ${XC_SITECORE_DOCKER_REGISTRY}sitecore-xc1-prc:${XC_PACKAGES_TAG}
@@ -519,8 +507,6 @@ services:
       COMMERCEENGINE_BraintreeMerchantId: ${XC_ENGINE_BRAINTREEMERCHANTID}
       COMMERCEENGINE_BraintreePublicKey: ${XC_ENGINE_BRAINTREEPUBLICKEY}
       COMMERCEENGINE_BraintreePrivateKey: ${XC_ENGINE_BRAINTREEPRIVATEKEY}
-    volumes:
-      - C:\containers\engine\catalogs:C:\engine\catalogs:RO
     labels:
       - "traefik.enable=true"
       - "traefik.http.middlewares.force-STS-Header.headers.forceSTSHeader=true"

@@ -22,7 +22,7 @@ COPY /Healthchecks/Healthcheck.ps1 ./Healthchecks/
 COPY /LogMonitor ./LogMonitor
 
 WORKDIR C:/engine
-COPY wdp/ .
+#COPY wdp/ .
 
 USER ContainerUser
 

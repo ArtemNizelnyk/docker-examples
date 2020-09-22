@@ -6,4 +6,3 @@ FROM ${BASE_IMAGE}
 
 WORKDIR c:/Identity
 
-COPY wdp/ .
