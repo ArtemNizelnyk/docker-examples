@@ -1,0 +1,229 @@
+version: "2.4"
+services:
+  solution:
+    image: ${REGISTRY}${COMPOSE_PROJECT_NAME}-solution:${VERSION:-latest}
+    build:
+      context: .
+      args:
+        BASE_IMAGE: ${SOLUTION_BASE_IMAGE}
+        BUILD_IMAGE: ${SOLUTION_BUILD_IMAGE}
+        BUILD_CONFIGURATION: ${BUILD_CONFIGURATION}
+    scale: 0
+  traefik:
+    volumes:
+        - ./docker/traefik:C:/etc/traefik
+  redis:
+          image: ${REGISTRY}${COMPOSE_PROJECT_NAME}-redis:${VERSION:-latest}
+          build:
+            context: ./docker/build/xc-common/redis
+            args:
+              BASE_IMAGE: ${SITECORE_DOCKER_REGISTRY}sitecore-redis:${SITECORE_VERSION}
+  mssql:
+    image: ${REGISTRY}${COMPOSE_PROJECT_NAME}sitecore-xc1-mssql:${VERSION:-latest}
+    build:
+      context: ./docker/build/xc-common/mssql
+      dockerfile: ./standalone/Dockerfile
+      args:
+        BASE_IMAGE: ${XC_NONPRODUCTION_SITECORE_DOCKER_REGISTRY}sitecore-xc1-mssql:${XC_PACKAGES_TAG}
+        SPE_IMAGE: ${SITECORE_MODULE_REGISTRY}spe-assets:${SPE_VERSION}
+        SXA_IMAGE: ${SITECORE_MODULE_REGISTRY}sxa-xp1-assets:${SXA_VERSION}
+        HEADLESS_SERVICES_IMAGE: ${SITECORE_MODULE_REGISTRY}jss-xp1-assets:${JSS_VERSION}
+    mem_limit: 2GB
+    volumes:
+      - ${LOCAL_DATA_PATH}\mssql:c:\data
+  solr:
+    image: ${REGISTRY}${COMPOSE_PROJECT_NAME}-xc1-solr:${VERSION:-latest}
+    build:
+      context: ./docker/build/xc-common/solr
+      dockerfile: ./standalone/Dockerfile
+      args:
+        BASE_IMAGE: ${XC_NONPRODUCTION_SITECORE_DOCKER_REGISTRY}sitecore-xc1-solr:${XC_PACKAGES_TAG}
+        SXA_IMAGE: ${SITECORE_MODULE_REGISTRY}sxa-xp1-assets:${SXA_VERSION}
+    mem_limit: 1GB
+    volumes:
+      - ${LOCAL_DATA_PATH}\solr:c:\data
+  id:
+    image: ${REGISTRY}${COMPOSE_PROJECT_NAME}-id:${VERSION:-latest}
+    build:
+      context: ./docker/build/xc-common/id
+      args:
+        BASE_IMAGE: ${SITECORE_DOCKER_REGISTRY}sitecore-xc-id:${SITECORE_VERSION}
+  cd:
+    image: ${REGISTRY}${COMPOSE_PROJECT_NAME}-xp1-cd:${VERSION:-latest}
+    build:
+      context: ./docker/build/xc1-cxa-jss/cd
+      args:
+        BASE_IMAGE: ${XC_SITECORE_DOCKER_REGISTRY}sitecore-xc1-cd:${XC_PACKAGES_TAG}
+        SXA_IMAGE: ${SITECORE_MODULE_REGISTRY}sxa-xp1-assets:${SXA_VERSION}
+        TOOLING_IMAGE: ${SITECORE_TOOLS_REGISTRY}sitecore-docker-tools-assets:${TOOLS_VERSION}
+        HEADLESS_SERVICES_IMAGE: ${SITECORE_MODULE_REGISTRY}jss-xp1-assets:${JSS_VERSION}
+        SOLUTION_IMAGE: ${REGISTRY}${COMPOSE_PROJECT_NAME}-solution:${VERSION:-latest}
+        
+    depends_on:
+      - solution
+    volumes:
+      - ${LOCAL_DEPLOY_PATH}\website:C:\deploy
+      - ${LOCAL_DATA_PATH}\cd:C:\inetpub\wwwroot\App_Data\logs
+    entrypoint: powershell -Command "& C:\tools\entrypoints\iis\Development.ps1"
+    labels:
+      - "traefik.http.routers.cd.entrypoints=websecure"
+      - "traefik.http.routers.cd.tls=true"
+  cm:
+    image: ${REGISTRY}${COMPOSE_PROJECT_NAME}-xp1-cm:${VERSION:-latest}
+    build:
+      context: ./docker/build/xc1-cxa-jss/cm
+      args:
+        BASE_IMAGE: ${XC_SITECORE_DOCKER_REGISTRY}sitecore-xc1-cm:${XC_PACKAGES_TAG}
+        SPE_IMAGE: ${SITECORE_MODULE_REGISTRY}spe-assets:${SPE_VERSION}
+        SXA_IMAGE: ${SITECORE_MODULE_REGISTRY}sxa-xp1-assets:${SXA_VERSION}
+        TOOLING_IMAGE: ${SITECORE_TOOLS_REGISTRY}sitecore-docker-tools-assets:${TOOLS_VERSION}
+        HEADLESS_SERVICES_IMAGE: ${SITECORE_MODULE_REGISTRY}jss-xp1-assets:${JSS_VERSION}
+        MANAGEMENT_SERVICES_IMAGE: ${SITECORE_MODULE_REGISTRY}sitecore-management-services-xp1-assets:${MS_VERSION}
+        SOLUTION_IMAGE: ${REGISTRY}${COMPOSE_PROJECT_NAME}-solution:${VERSION:-latest}
+    depends_on:
+      - solution
+    volumes:
+      - ${LOCAL_DEPLOY_PATH}\website:C:\deploy
+      - ${LOCAL_DATA_PATH}\cm:C:\inetpub\wwwroot\App_Data\logs
+    entrypoint: powershell -Command "& C:\tools\entrypoints\iis\Development.ps1"
+    
+  prc:
+    image: ${REGISTRY}${COMPOSE_PROJECT_NAME}-xc1-prc:${VERSION:-latest}
+    build:
+      context: ./docker/build/prc
+      args:
+        BASE_IMAGE: ${XC_SITECORE_DOCKER_REGISTRY}sitecore-xc1-prc:${XC_PACKAGES_TAG}
+        SOLUTION_IMAGE: ${REGISTRY}${COMPOSE_PROJECT_NAME}-solution:${VERSION:-latest}
+    depends_on:
+      - solution
+  rep:
+    image: ${REGISTRY}${COMPOSE_PROJECT_NAME}-xc1-rep:${VERSION:-latest}
+    build:
+      context: ./docker/build/rep
+      args:
+        BASE_IMAGE: ${XC_SITECORE_DOCKER_REGISTRY}sitecore-xc1-rep:${XC_PACKAGES_TAG}
+        SOLUTION_IMAGE: ${REGISTRY}${COMPOSE_PROJECT_NAME}-solution:${VERSION:-latest}
+    depends_on:
+      - solution
+  xdbcollection:
+    image: ${REGISTRY}${COMPOSE_PROJECT_NAME}-xc1-xdbcollection:${VERSION:-latest}
+    build:
+      context: ./docker/build/xdbcollection
+      args:
+        BASE_IMAGE: ${XC_SITECORE_DOCKER_REGISTRY}sitecore-xc1-xdbcollection:${XC_PACKAGES_TAG}
+        SOLUTION_IMAGE: ${REGISTRY}${COMPOSE_PROJECT_NAME}-solution:${VERSION:-latest}
+    depends_on:
+      - solution
+  xdbsearch:
+    image: ${REGISTRY}${COMPOSE_PROJECT_NAME}-xc1-xdbsearch:${VERSION:-latest}
+    build:
+      context: ./docker/build/xdbsearch
+      args:
+        BASE_IMAGE: ${XC_SITECORE_DOCKER_REGISTRY}sitecore-xc1-xdbsearch:${XC_PACKAGES_TAG}
+        SOLUTION_IMAGE: ${REGISTRY}${COMPOSE_PROJECT_NAME}-solution:${VERSION:-latest}
+    depends_on:
+      - solution
+  xdbautomation:
+    image: ${REGISTRY}${COMPOSE_PROJECT_NAME}-xc1-xdbautomation:${VERSION:-latest}
+    build:
+      context: ./docker/build/xdbautomation
+      args:
+        BASE_IMAGE: ${XC_SITECORE_DOCKER_REGISTRY}sitecore-xc1-xdbautomation:${XC_PACKAGES_TAG}
+        SOLUTION_IMAGE: ${REGISTRY}${COMPOSE_PROJECT_NAME}-solution:${VERSION:-latest}
+    depends_on:
+      - solution
+  xdbautomationrpt:
+    image: ${REGISTRY}${COMPOSE_PROJECT_NAME}-xp1-xdbautomationrpt:${VERSION:-latest}
+    build:
+      context: ./docker/build/xdbautomationrpt
+      args:
+        BASE_IMAGE: ${SITECORE_DOCKER_REGISTRY}sitecore-xp1-xdbautomationrpt:${SITECORE_VERSION}
+
+  cortexprocessing:
+    image: ${REGISTRY}${COMPOSE_PROJECT_NAME}-xp1-cortexprocessing:${VERSION:-latest}
+    build:
+      context: ./docker/build/cortexprocessing
+      args:
+        BASE_IMAGE: ${SITECORE_DOCKER_REGISTRY}sitecore-xp1-cortexprocessing:${SITECORE_VERSION}
+
+  cortexreporting:
+    image: ${REGISTRY}${COMPOSE_PROJECT_NAME}-xp1-cortexreporting:${VERSION:-latest}
+    build:
+      context: ./docker/build/cortexreporting
+      args:
+        BASE_IMAGE: ${SITECORE_DOCKER_REGISTRY}sitecore-xp1-cortexreporting:${SITECORE_VERSION}
+
+  xdbrefdata:
+    image: ${REGISTRY}${COMPOSE_PROJECT_NAME}-xp1-xdbrefdata:${VERSION:-latest}
+    build:
+      context: ./docker/build/xdbrefdata
+      args:
+        BASE_IMAGE: ${SITECORE_DOCKER_REGISTRY}sitecore-xp1-xdbrefdata:${SITECORE_VERSION}
+  xdbsearchworker:
+    image: ${REGISTRY}${COMPOSE_PROJECT_NAME}-xc1-xdbsearchworker:${VERSION:-latest}
+    build:
+      context: ./docker/build/xdbsearchworker
+      args:
+        BASE_IMAGE: ${XC_SITECORE_DOCKER_REGISTRY}sitecore-xc1-xdbsearchworker:${XC_PACKAGES_TAG}
+        SOLUTION_IMAGE: ${REGISTRY}${COMPOSE_PROJECT_NAME}-solution:${VERSION:-latest}
+    depends_on:
+      - solution
+  xdbautomationworker:
+    image: ${REGISTRY}${COMPOSE_PROJECT_NAME}-xc1-xdbautomationworker:${VERSION:-latest}
+    build:
+      context: ./docker/build/xdbautomationworker
+      args:
+        BASE_IMAGE: ${XC_SITECORE_DOCKER_REGISTRY}sitecore-xc1-xdbautomationworker:${XC_PACKAGES_TAG}
+        SOLUTION_IMAGE: ${REGISTRY}${COMPOSE_PROJECT_NAME}-solution:${VERSION:-latest}
+    depends_on:
+      - solution
+  cortexprocessingworker:
+    image: ${REGISTRY}${COMPOSE_PROJECT_NAME}-xp1-cortexprocessingworker:${VERSION:-latest}
+    build:
+      context: ./docker/build/cortexprocessingworker
+      args:
+        BASE_IMAGE: ${SITECORE_DOCKER_REGISTRY}sitecore-xp1-cortexprocessingworker:${SITECORE_VERSION}
+        SOLUTION_IMAGE: ${REGISTRY}${COMPOSE_PROJECT_NAME}-solution:${VERSION:-latest}
+    depends_on:
+      - solution
+
+  bizfx:
+    image: ${REGISTRY}${COMPOSE_PROJECT_NAME}-sitecore-xc-bizfx:${VERSION:-latest}
+    build:
+      context: ./docker/build/xc-common/bizfx
+      args:
+        BASE_IMAGE: ${XC_SITECORE_DOCKER_REGISTRY}sitecore-xc-bizfx:${XC_PACKAGES_TAG}
+        SOLUTION_IMAGE: ${REGISTRY}${COMPOSE_PROJECT_NAME}-solution:${VERSION:-latest}
+    depends_on:
+      - solution
+  engine-authoring:
+    image: ${REGISTRY}${COMPOSE_PROJECT_NAME}-sitecore-xc-engine:${VERSION:-latest}
+    build:
+      context: ./docker/build/xc-common/engine
+      args:
+        BASE_IMAGE: ${XC_SITECORE_DOCKER_REGISTRY}sitecore-xc-engine:${XC_PACKAGES_TAG}
+        SOLUTION_IMAGE: ${REGISTRY}${COMPOSE_PROJECT_NAME}-solution:${VERSION:-latest}
+    depends_on:
+      - solution
+    volumes: 
+      - ${LOCAL_DEPLOY_PATH}\website:C:\deploy
+      - ${LOCAL_DATA_PATH}\engine\auth:C:\engine
+  engine-shops:
+    image: ${REGISTRY}${COMPOSE_PROJECT_NAME}-sitecore-xc-engine:${VERSION:-latest}
+    build:
+      context: ./docker/build/xc-common/engine
+      args:
+        BASE_IMAGE: ${XC_SITECORE_DOCKER_REGISTRY}sitecore-xc-engine:${XC_PACKAGES_TAG}
+        
+  engine-minions:
+    image: ${REGISTRY}${COMPOSE_PROJECT_NAME}-sitecore-xc-engine:${VERSION:-latest}
+    build:
+      context: ./docker/build/xc-common/engine
+      args:
+        BASE_IMAGE: ${XC_SITECORE_DOCKER_REGISTRY}sitecore-xc-engine:${XC_PACKAGES_TAG}
+  engine-ops:
+     image: ${REGISTRY}${COMPOSE_PROJECT_NAME}-sitecore-xc-engine:${VERSION:-latest}
+     build:
+      context: ./docker/build/xc-common/engine
+      args:
+        BASE_IMAGE: ${XC_SITECORE_DOCKER_REGISTRY}sitecore-xc-engine:${XC_PACKAGES_TAG}
