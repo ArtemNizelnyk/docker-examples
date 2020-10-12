@@ -1,0 +1,96 @@
+version: "2.4"
+services:
+  engine-solution:
+    image: ${REGISTRY}${COMPOSE_PROJECT_NAME}-engine-solution:${VERSION:-latest}
+    build: 
+      context: ./src/Sitecore.Commerce.Engine.SDK/
+      dockerfile: ./src/Sitecore.Commerce.Engine/Dockerfile
+      args:
+        BASE_IMAGE: ${SOLUTION_BASE_IMAGE}
+        COMMERCE_BUILD_IMAGE: ${COMMERCE_BUILD_IMAGE}
+    scale: 0
+  solution:
+    image: ${REGISTRY}${COMPOSE_PROJECT_NAME}-solution:${VERSION:-latest}
+    build:
+      context: .
+      args:
+        BASE_IMAGE: ${SOLUTION_BASE_IMAGE}
+        BUILD_IMAGE: ${SOLUTION_BUILD_IMAGE}
+        BUILD_CONFIGURATION: ${BUILD_CONFIGURATION}
+    scale: 0
+  mssql:
+    image: ${REGISTRY}${COMPOSE_PROJECT_NAME}-jss-xc1-mssql:${VERSION:-latest}
+    build:
+      context: ./docker/build/mssql
+      dockerfile: ./standalone/Dockerfile
+      args:
+        BASE_IMAGE: ${XC_NONPRODUCTION_SITECORE_DOCKER_REGISTRY}sitecore-xc1-mssql:${XC_PACKAGES_TAG} 
+        HEADLESS_RESOURCES_IMAGE: ${MODULES_SITECORE_DOCKER_REGISTRY}jss-xp1-assets:${JSS_VERSION}
+  cd:
+    image: ${REGISTRY}${COMPOSE_PROJECT_NAME}-jss-xc1-cd:${VERSION:-latest}
+    build:
+      context: ./docker/build/cd
+      args:
+        BASE_IMAGE: ${XC_SITECORE_DOCKER_REGISTRY}sitecore-xc1-cd:${XC_PACKAGES_TAG}
+        TOOLING_IMAGE: ${SITECORE_TOOLS_REGISTRY}sitecore-docker-tools-assets:${TOOLS_VERSION}
+        SOLUTION_IMAGE: ${REGISTRY}${COMPOSE_PROJECT_NAME}-solution:${VERSION:-latest}
+        HEADLESS_RESOURCES_IMAGE: ${MODULES_SITECORE_DOCKER_REGISTRY}jss-xp1-assets:${JSS_VERSION}
+    depends_on:
+      - solution
+    volumes:
+      - ${LOCAL_DEPLOY_PATH}\website:C:\deploy
+      - ${LOCAL_DATA_PATH}\cd:C:\inetpub\wwwroot\App_Data\logs
+  cm:
+    image: ${REGISTRY}${COMPOSE_PROJECT_NAME}-jss-xc1-cm:${VERSION:-latest}
+    build:
+      context: ./docker/build/cm
+      args:
+        BASE_IMAGE: ${XC_SITECORE_DOCKER_REGISTRY}sitecore-xc1-cm:${XC_PACKAGES_TAG}
+        TOOLING_IMAGE: ${SITECORE_TOOLS_REGISTRY}sitecore-docker-tools-assets:${TOOLS_VERSION}
+        SOLUTION_IMAGE: ${REGISTRY}${COMPOSE_PROJECT_NAME}-solution:${VERSION:-latest}
+        HEADLESS_RESOURCES_IMAGE: ${MODULES_SITECORE_DOCKER_REGISTRY}jss-xp1-assets:${JSS_VERSION}
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.middlewares.force-STS-Header.headers.forceSTSHeader=true"
+      - "traefik.http.middlewares.force-STS-Header.headers.stsSeconds=31536000"
+      - "traefik.http.routers.cm-secure.entrypoints=websecure"
+      - "traefik.http.routers.cm-secure.rule=Host(`${CM_HOST}`)"
+      - "traefik.http.routers.cm-secure.tls=true"
+      - "traefik.http.routers.cm-secure.middlewares=force-STS-Header"
+    volumes: 
+      - ${LOCAL_DATA_PATH}\cm:C:\inetpub\wwwroot\App_Data\logs
+     
+  
+  engine-authoring:
+    image: ${REGISTRY}${COMPOSE_PROJECT_NAME}-jss-xc1-engine:test
+    tty: true
+    build:
+      context: ./docker/build/engine/
+      args:
+        BASE_IMAGE: ${COMMERCE_BASE_IMAGE}
+        TOOLING_IMAGE: ${SITECORE_TOOLS_REGISTRY}sitecore-docker-tools-assets:${TOOLS_VERSION}
+        SOLUTION_IMAGE: ${REGISTRY}${COMPOSE_PROJECT_NAME}-engine-solution:${VERSION:-latest}
+    volumes:
+      - ${LOCAL_DEPLOY_PATH}\commerceengine:C:\deploy
+    depends_on: 
+      - engine-solution  
+  bizfx: 
+    image: ${REGISTRY}${COMPOSE_PROJECT_NAME}-xc1-bizfx:${VERSION:-latest}
+    build: 
+      context: ./docker/build/bizfx
+      args: 
+        BASE_IMAGE: mcr.microsoft.com/windows/servercore/iis:windowsservercore-ltsc2019
+
+  tooling:
+    image: scr.sitecore.com/tools/sitecore-docker-tools-assets:10.0.0-1809
+    scale: 0
+  cortexreporting:
+    scale: 0
+  cortexprocessingworker:
+    scale: 0
+  cortexprocessing:
+    scale: 0
+  rep:
+    scale: 0
+  prc:
+    scale: 0

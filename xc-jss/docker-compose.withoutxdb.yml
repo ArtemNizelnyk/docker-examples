@@ -1,0 +1,46 @@
+version: "2.4"
+services:
+  cd:
+    depends_on:
+      mssql:
+        condition: service_healthy
+      solr:
+        condition: service_started
+      id:
+        condition: service_started
+      redis:
+        condition: service_started
+  cm:
+     depends_on:
+      mssql:
+        condition: service_healthy
+      solr:
+        condition: service_started
+      id:
+        condition: service_started
+      rep:
+        condition: service_started
+  prc:
+   scale: 0
+  rep:
+    scale: 0
+  xdbcollection:
+    scale: 0
+  xdbsearch:
+    scale: 0
+  xdbautomation:
+    scale: 0
+  xdbautomationrpt:
+    scale: 0
+  cortexprocessing:
+    scale: 0
+  cortexreporting:
+    scale: 0
+  xdbrefdata:
+   scale: 0
+  xdbsearchworker:
+    scale: 0
+  xdbautomationworker:
+    scale: 0
+  cortexprocessingworker:
+    scale: 0
